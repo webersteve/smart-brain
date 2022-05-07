@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
 import TsParticles from '../components/TsParticles/TsParticles';
-import Clarifai from 'clarifai';
 import Navigation from '../components/Navigation/Navigation';
 import SignIn from '../components/SignIn/SignIn';
 import Register from '../components/Register/Register';
@@ -10,9 +9,6 @@ import Rank from '../components/Rank/Rank';
 import ImageLinkForm from '../components/ImageLinkForm/ImageLinkForm';
 import FaceRecognition from '../components/FaceRecognition/FaceRecognition';
 
-const app = new Clarifai.App({
- apiKey: '3bd26a36f8b848e598078de6afce9f31'
-});
 
 const initialState = {
 	input: '',
@@ -59,8 +55,10 @@ class App extends Component {
 	}
 
 	displayFaceBox = (box) => {
-		console.log(box);
-		this.setState({box: box});
+		if (box) {
+			console.log(box);
+			this.setState({box: box});
+		}
 	}
 
 	onInputChange = (event) => {
@@ -69,21 +67,30 @@ class App extends Component {
 
 	onPictureSubmit = () => {
 		this.setState({imageUrl: this.state.input});
-		app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
+		const image = document.getElementById('inputimage');
+			fetch('http://localhost:3000/imageurl', {
+				method: 'post',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({
+					input: this.state.input
+				})
+			})
+			.then(response => response.json())
 			.then(response => {
 				if(response) {
 					fetch('http://localhost:3000/image', {
 						method: 'put',
 						headers: {'Content-Type': 'application/json'},
 						body: JSON.stringify({
-							id: this.state.user.id
+							id: this.state.user.id,
+							image: image.height
 						})
 					})
 					.then(response => response.json())
 					.then(count => {
 						this.setState(Object.assign(this.state.user, {entries: count}))
 					})
-					.catch(console.log)
+					.catch(err => console.log(error));
 				}
 				this.displayFaceBox(this.calculateFaceLocation(response))
 			})
